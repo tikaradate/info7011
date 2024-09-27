@@ -1,8 +1,15 @@
+/*
+    Autor:     Vinicius Tikara Venturi Date
+    Matrícula: 201900121201
+*/
+
 #include <vector>
 #include <tuple>
 #include <algorithm>
 #include <iostream>
 #include "hashtable.h"
+
+// Funções hash de cada tabela
 
 int hash_1(int k, int m){
     return k%m;
@@ -12,17 +19,16 @@ int hash_2(int k, int m){
     return (int) (m*(k*0.9 - (int)(k*0.9)));
 }
 
+
 void inicializa_cuckoo(cuckoo_hash &cuckoo, int tamanho){
-    cuckoo.t1.tabela.resize(tamanho, elemento());
-    cuckoo.t2.tabela.resize(tamanho, elemento());
     cuckoo.m = tamanho;
+    cuckoo.t1.tabela.resize(cuckoo.m, elemento());
+    cuckoo.t2.tabela.resize(cuckoo.m, elemento());
 }
 
 int busca(cuckoo_hash cuckoo, int valor){
     unsigned pos1 = hash_1(valor, cuckoo.m); 
     unsigned pos2 = hash_2(valor, cuckoo.m);
-
-    // if(cuckoo.t1.tabela[pos1].vazio) return -1;
 
     if(cuckoo.t1.tabela[pos1].valor == valor) return pos1;
 
@@ -35,20 +41,17 @@ int busca(cuckoo_hash cuckoo, int valor){
 void inserir(cuckoo_hash &cuckoo, int valor){
     int pos1 = hash_1(valor, cuckoo.m);
 
-    //std::cout << "Inserindo " << valor << std::endl;
-    //std::cout << "pos1 " << pos1 << std::endl;
-    
-
+    // checamos se existe espaco para o elemento i_k na primeira tabela
     if(cuckoo.t1.tabela[pos1].vazio || cuckoo.t1.tabela[pos1].excluido){
         cuckoo.t1.tabela[pos1].valor = valor;
         cuckoo.t1.tabela[pos1].vazio = false;
         cuckoo.t1.tabela[pos1].excluido = false;
+    // se não existir, movemos o elemento i_j da primeira tabela para a segunda
+    // e inserimos o elemento i_k na primeira tabela 
     } else {
         elemento e = cuckoo.t1.tabela[pos1];
 
         int pos2 = hash_2(e.valor, cuckoo.m);
-
-        //std::cout << "pos2 " << pos2 << std::endl;
 
         cuckoo.t2.tabela[pos2] = e;
 
@@ -62,13 +65,9 @@ void remover(cuckoo_hash &cuckoo, int valor){
     int pos1 = hash_1(valor, cuckoo.m);
     int pos2 = hash_2(valor, cuckoo.m);
 
-    // std::cout << "Removendo " << valor << std::endl;
-    // std::cout << "pos1 " << pos1 << std::endl;
-    // std::cout << "pos2 " << pos2 << std::endl;
-
-    if(!cuckoo.t2.tabela[pos2].vazio){
+    if(!cuckoo.t2.tabela[pos2].vazio && cuckoo.t2.tabela[pos2].valor == valor){
         cuckoo.t2.tabela[pos2].excluido = true; 
-    } else if(!cuckoo.t1.tabela[pos1].vazio){
+    } else if(!cuckoo.t1.tabela[pos1].vazio && cuckoo.t1.tabela[pos1].valor == valor){
         cuckoo.t1.tabela[pos1].excluido = true; 
     }
 }
@@ -87,6 +86,7 @@ void imprimir(struct cuckoo_hash cuckoo){
         }
     }
     
+    // utilizando o fato de que as tuplas do C++ fazem comparação de tupla campo a campo
     sort(impressao.begin(), impressao.end());
 
     for(unsigned int i = 0; i < impressao.size(); ++i){

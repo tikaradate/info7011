@@ -1,3 +1,8 @@
+/*
+    Autor:     Vinicius Tikara Venturi Date
+    Matrícula: 201900121201
+*/
+
 #include <vector>
 
 struct elemento {
@@ -21,6 +26,8 @@ int hash_1(int k, int m);
 int hash_2(int k, int m);
 
 void inicializa_cuckoo(cuckoo_hash &uckoo, int tamanho);
+
+int busca(cuckoo_hash cuckoo, int valor);
 
 void inserir(cuckoo_hash &cuckoo, int valor);
 
