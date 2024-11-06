@@ -17,10 +17,9 @@ int main(){
         } else if (operacao == "S"){
             remove_no(stoi(id), dht);
         } else if (operacao == "I"){
-            inclui_chave(stoi(id), stoi(chave), dht);
+            inclui_chave(stoi(id), stoi(chave),stoi(timestamp), dht);
         } else if (operacao == "L"){
-            lookup(stoi(id), stoi(chave), dht, stoi(timestamp));
+            lookup_e_imprime(stoi(id), stoi(chave), stoi(timestamp), dht);
         }
     }
-    // print_nos(dht);
 }

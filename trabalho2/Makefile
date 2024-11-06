@@ -13,4 +13,4 @@ clean:
 	rm -rf *.o
 
 purge: clean
-	rm -rf myht
+	rm -rf mydht
