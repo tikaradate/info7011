@@ -125,13 +125,16 @@ void imprime_log(uint32_t id, uint32_t chave, uint32_t timestamp, struct dht &dh
 }
 
 std::vector<uint32_t> lookup(uint32_t id, uint32_t chave, uint32_t timestamp, struct dht &dht){
-    uint32_t passo = chave - id, cur_no = id, max_id = dht.id_max;
+    uint32_t passo = chave - id, cur_no = id;
     std::vector<uint32_t> lookup_ids;
     // caminha a passos da maior potência de 2 menor ou igual que falta para chegar no nó
-    while(cur_no < chave && passo > 0){
+    while(!(dht.nos.lower_bound(chave)->first == cur_no)){
+        if(cur_no == 0) cur_no = dht.nos.begin()->first;
+        if(cur_no == dht.nos.begin()->first && chave > dht.id_max){
+            break;
+        }
         lookup_ids.push_back(cur_no);
-        cur_no = dht.nos[cur_no].finger_table[(uint32_t)log2(passo % max_id)];
-        passo -= 1 << (uint32_t)log2(passo);
+        cur_no = dht.nos[cur_no].finger_table[(uint32_t)log2(chave - cur_no)];
     }
     lookup_ids.push_back(cur_no);
 
