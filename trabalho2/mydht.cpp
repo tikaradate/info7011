@@ -2,10 +2,8 @@
     Autor:     Vinicius Tikara Venturi Date
     Matrícula: 201900121201
 */
-
 #include <iostream>
 #include "dht.h"
-
 
 int main(){
     std::string timestamp, operacao, id, chave;
