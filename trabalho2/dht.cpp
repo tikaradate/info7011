@@ -45,18 +45,50 @@ void update_finger_table(struct dht &dht){
 }
 
 void insere_no(uint32_t id, struct dht &dht){
-    dht.id_max = std::max(id, dht.id_max);
-
     struct no novo_no;
     novo_no.id = id;
     dht.nos[id] = novo_no;
+
+    if(dht.nos.size() > 1){
+        auto prox = dht.nos.lower_bound(id+1);
+        // pega a partir do começo do anel
+        if(prox == dht.nos.end()) prox = dht.nos.begin();
+
+        auto anterior = std::prev(prox);
+        // se é o primeiro, o anterior vem no fim do anel
+        if(anterior == dht.nos.end()) anterior = std::prev(anterior);
+
+        for(auto chave : prox->second.chaves){
+            if(chave > anterior->second.id && chave <= id){
+                novo_no.chaves.insert(chave);
+                prox->second.chaves.erase(chave);
+            }
+        }
+    } else if(dht.nos.size() == 1){
+        auto unico = dht.nos.begin();
+        if(id > unico->second.id){
+            for(auto chave : unico->second.chaves){
+                if(chave > unico->second.id && chave <= id){
+                    novo_no.chaves.insert(chave);
+                    unico->second.chaves.erase(chave);
+                }
+            }
+        } else if (id < unico->second.id) {
+            for(auto chave : unico->second.chaves){
+                if(chave > unico->second.id || chave <= id){
+                    novo_no.chaves.insert(chave);
+                    unico->second.chaves.erase(chave);
+                }
+            }
+        }
+    }
+
+    dht.id_max = std::max(id, dht.id_max);
 
     update_finger_table(dht);
 }
 
 void remove_no(uint32_t id, struct dht &dht){
-    if(dht.id_max == id) dht.id_max = dht.nos.rbegin()->first; 
-
     auto excluido = dht.nos.find(id);
     auto it = dht.nos.end();
     // se é o último nó do anel, checamos se tem um diferente no início
@@ -73,6 +105,8 @@ void remove_no(uint32_t id, struct dht &dht){
 
     dht.nos.erase(id);
 
+    if(dht.id_max == id) dht.id_max = dht.nos.rbegin()->first; 
+    
     update_finger_table(dht);
 }
 
@@ -85,17 +119,18 @@ void imprime_log(uint32_t id, uint32_t chave, uint32_t timestamp, struct dht &dh
     std::cout << "}\n";
 
     for(uint32_t i = 0; i < lookup_ids.size(); ++i){
+        std::cout << timestamp << " T ";
         print_no(dht, lookup_ids[i]);
     }
 }
 
 std::vector<uint32_t> lookup(uint32_t id, uint32_t chave, uint32_t timestamp, struct dht &dht){
-    uint32_t passo = chave - id, cur_no = id;
+    uint32_t passo = chave - id, cur_no = id, max_id = dht.id_max;
     std::vector<uint32_t> lookup_ids;
     // caminha a passos da maior potência de 2 menor ou igual que falta para chegar no nó
     while(cur_no < chave && passo > 0){
         lookup_ids.push_back(cur_no);
-        cur_no = dht.nos[cur_no].finger_table[(uint32_t)log2(passo)];
+        cur_no = dht.nos[cur_no].finger_table[(uint32_t)log2(passo % max_id)];
         passo -= 1 << (uint32_t)log2(passo);
     }
     lookup_ids.push_back(cur_no);
