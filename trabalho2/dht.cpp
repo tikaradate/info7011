@@ -17,14 +17,12 @@ void inicializa_dht(struct dht &dht){
 static void print_no(struct dht &dht, int id){
     auto it = dht.nos.find(id);
     std::cout << it->first << " {";
-    for(int i = 0; i < log2(dht.id_max); ++i){
-        if(it->second.finger_table[i] != 0){
-            if(it->second.finger_table[i+1] == 0){
-                std::cout << it->second.finger_table[i];
-                break;
-            } else {
-                std::cout << it->second.finger_table[i] << ",";
-            }
+    for(int i = 0; i < log2(dht.id_max)+1; ++i){
+        if(i+1 == (int)log2(dht.id_max)+1){
+            std::cout << it->second.finger_table[i];
+            break;
+        } else {
+            std::cout << it->second.finger_table[i] << ",";
         }
     }
     std:: cout << "}\n";
@@ -36,6 +34,7 @@ void update_finger_table(struct dht &dht){
         int m = log2(dht.id_max)+1;
         for(int i = 0; i < m; ++i){
             // procura pelo primeiro nó que é maior ou igual
+            // utilizando a fórmula para calcular a finger table 
             auto lb = dht.nos.lower_bound(((id + (1<<(i))) % (1<<(m))));
             // pega a partir do começo do anel
             if(lb == dht.nos.end()) lb = dht.nos.begin();
@@ -49,6 +48,7 @@ void insere_no(int id, struct dht &dht){
     novo_no.id = id;
     dht.nos[id] = novo_no;
 
+    // com mais de 2 nós, estamos inserindo entre 2 deles
     if(dht.nos.size() > 1){
         auto prox = dht.nos.lower_bound(id+1);
         // pega a partir do começo do anel
@@ -64,6 +64,7 @@ void insere_no(int id, struct dht &dht){
                 prox->second.chaves.erase(chave);
             }
         }
+    // com um único nó dividimos as chaves de acordo com a direção do primeiro nó
     } else if(dht.nos.size() == 1){
         auto unico = dht.nos.begin();
         if(id > unico->second.id){
@@ -98,13 +99,14 @@ void remove_no(int id, struct dht &dht){
     } else {
         it =  next(excluido, 1);
     }
-
+    // transferimos as chaves
     if(it != dht.nos.end()){
         it->second.chaves.insert(excluido->second.chaves.begin(), excluido->second.chaves.end());
     }
 
     dht.nos.erase(id);
 
+    // atualizamos o maior valor
     if(dht.id_max == id) dht.id_max = dht.nos.rbegin()->first; 
     
     update_finger_table(dht);
@@ -127,20 +129,26 @@ void imprime_log(int id, int chave, int timestamp, struct dht &dht, std::vector<
 std::vector<int> lookup(int id, int chave, int timestamp, struct dht &dht){
     int cur_no = id, m = log2(dht.id_max);
     if(log2(dht.id_max) != (int)log2(dht.id_max)) m++;
+
+    // se a chave estiver antes do nó corrente, precisamos tratá-la como
+    // um valor maior, um valor com um passo de 2^m
     int chave_virtual = chave - cur_no;
     if(chave_virtual < 0){
         chave_virtual = (chave_virtual + (1<<m));
     }
+
     std::vector<int> lookup_ids;
     // caminha a passos da maior potência de 2 menor ou igual que falta para chegar no nó
     while(!(dht.nos.lower_bound(chave)->first == cur_no)){
         if(cur_no == 0) cur_no = dht.nos.begin()->first;
+        // demos a volta na DHT e chegamos às chaves que o primeiro nó
+        // carrega, além daquelas do intervalo (1..n_id)
         if(cur_no == dht.nos.begin()->first && chave > dht.id_max){
             break;
         }
         lookup_ids.push_back(cur_no);
         cur_no = dht.nos[cur_no].finger_table[(int)log2((chave_virtual))];
-
+        // atualizamos a chave virtual na mesma lógica anterior
         chave_virtual = chave - cur_no;
         if(chave_virtual < 0){
             chave_virtual = (chave_virtual + (1<<m));
@@ -161,6 +169,7 @@ void inclui_chave(int id, int chave, int timestamp, struct dht &dht){
     std::vector<int> nos;
     int no_id;
     nos = lookup(id, chave, timestamp, dht);
+    // inserimos a chave no último nó visitado pelo lookup
     no_id = nos[nos.size() - 1];
     dht.nos[no_id].chaves.insert(chave);
 }

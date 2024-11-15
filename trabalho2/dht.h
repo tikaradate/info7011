@@ -11,7 +11,7 @@
 
 struct no {
     int id;
-    int finger_table[MAX] = {0};
+    int finger_table[MAX] = {-1};
     std::set<int> chaves;
 };
 
